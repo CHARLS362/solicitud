@@ -4,16 +4,38 @@ package com.example.prot2.`solicitud-tasaV`
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
@@ -23,9 +45,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import androidx.lifecycle.viewmodel.compose.viewModel
+import sol.example.solicitud.`solicitud-tasaV`.DesplegableEntidadFinancieraViewModel
 import sol.example.solicitud.`solicitud-tasaV`.InteresFormViewModel
 import sol.example.solicitud.`solicitud-tasaV`.PropuestaNegociacionViewModel
-import androidx.compose.ui.focus.onFocusChanged
+import sol.example.solicitud.`solicitud-tasaV`.GuardarSolicitudViewModel
 
 
 @Preview(showBackground = true,
@@ -34,16 +58,20 @@ import androidx.compose.ui.focus.onFocusChanged
 
 
 @Composable
-fun PropuestaDeNegociacionContent(viewModel: PropuestaNegociacionViewModel = PropuestaNegociacionViewModel()) {
+fun PropuestaDeNegociacionContent() {
+    val propuestaNegociacionViewModel = PropuestaNegociacionViewModel()
+    val guardarSolicitudViewModel = GuardarSolicitudViewModel(propuestaNegociacionViewModel)
+
     val scrollState = rememberScrollState()
     var expanded by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf("LISTA DE ELEMENTOS") }
     val options = listOf("Opción 1", "Opción 2", "Opción 3")
 
     var justificationText by remember { mutableStateOf("") }
-    val errorMessage by viewModel.errorMessage
+    val errorMessage by propuestaNegociacionViewModel.errorMessage
     val padding = 16.dp
     var menuWidth by remember { mutableStateOf(0.dp) }
+    val isButtonEnabled by guardarSolicitudViewModel.isButtonEnabled
 
     var isFocused by remember { mutableStateOf(false) }
 
@@ -94,7 +122,7 @@ fun PropuestaDeNegociacionContent(viewModel: PropuestaNegociacionViewModel = Pro
                     )
                     Icon(
                         imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Dropdown Icon",
+                        contentDescription = null,
                         tint = Color.Black
                     )
                 }
@@ -114,7 +142,8 @@ fun PropuestaDeNegociacionContent(viewModel: PropuestaNegociacionViewModel = Pro
                 value = justificationText,
                 onValueChange = { text ->
                     justificationText = text
-                    viewModel.validateJustificationText(text)
+                    propuestaNegociacionViewModel.validateJustificationText(text)
+                    guardarSolicitudViewModel.onJustificationTextChange(text)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -136,7 +165,7 @@ fun PropuestaDeNegociacionContent(viewModel: PropuestaNegociacionViewModel = Pro
                     focusedLabelColor = Color.Gray,
                     unfocusedLabelColor = Color.Gray
                 ),
-                isError = errorMessage.isNotEmpty() && !isFocused 
+                isError = errorMessage.isNotEmpty() && !isFocused
             )
 
             if (errorMessage.isNotEmpty() && !isFocused) {
@@ -158,6 +187,17 @@ fun PropuestaDeNegociacionContent(viewModel: PropuestaNegociacionViewModel = Pro
             Spacer(modifier = Modifier.height(16.dp))
 
             InteresFormDesign()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            GuardarSolicitudButton(
+                isEnabled = isButtonEnabled,
+                onClick = {
+                    guardarSolicitudViewModel.guardarSolicitud()
+                    println("Solicitud guardada")
+                },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
         }
 
         if (expanded) {
@@ -212,6 +252,8 @@ fun PropuestaDeNegociacionContent(viewModel: PropuestaNegociacionViewModel = Pro
     }
 }
 
+
+
 @Composable
 fun InteresFormDesign(viewModel: InteresFormViewModel = InteresFormViewModel()) {
     Column(
@@ -222,7 +264,9 @@ fun InteresFormDesign(viewModel: InteresFormViewModel = InteresFormViewModel()) 
     ) {
         Text(
             text = "Normal",
-            fontSize = 18.sp
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
         )
 
         Row(
@@ -235,7 +279,16 @@ fun InteresFormDesign(viewModel: InteresFormViewModel = InteresFormViewModel()) 
                 onValueChange = {},
                 label = { Text("Min.") },
                 modifier = Modifier.weight(1f),
-                enabled = false
+                enabled = false,
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 16.sp,
+                    color = Color.Black
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = Color.Black,
+                    disabledBorderColor = Color.Gray,
+                    disabledLabelColor = Color.DarkGray
+                )
             )
 
             OutlinedTextField(
@@ -243,7 +296,16 @@ fun InteresFormDesign(viewModel: InteresFormViewModel = InteresFormViewModel()) 
                 onValueChange = {},
                 label = { Text("Max.") },
                 modifier = Modifier.weight(1f),
-                enabled = false
+                enabled = false,
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 16.sp,
+                    color = Color.Black
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = Color.Black,
+                    disabledBorderColor = Color.Gray,
+                    disabledLabelColor = Color.DarkGray
+                )
             )
         }
 
@@ -257,7 +319,16 @@ fun InteresFormDesign(viewModel: InteresFormViewModel = InteresFormViewModel()) 
                 onValueChange = {},
                 label = { Text("T. Moratoria (%)") },
                 modifier = Modifier.weight(1f),
-                enabled = false
+                enabled = false,
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 16.sp,
+                    color = Color.Black
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = Color.Black,
+                    disabledBorderColor = Color.Gray,
+                    disabledLabelColor = Color.DarkGray
+                )
             )
 
             OutlinedTextField(
@@ -265,16 +336,25 @@ fun InteresFormDesign(viewModel: InteresFormViewModel = InteresFormViewModel()) 
                 onValueChange = {},
                 label = { Text("T. Interés (TEA)") },
                 modifier = Modifier.weight(1f),
-                enabled = false
+                enabled = false,
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 16.sp,
+                    color = Color.Black
+                ),
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = Color.Black,
+                    disabledBorderColor = Color.Gray,
+                    disabledLabelColor = Color.DarkGray
+                )
             )
         }
     }
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    // Aquí puedes llamar a otros componentes, como EntidadExternaProponente si es necesario
     EntidadExternaProponente()
 }
+
 
 @Composable
 fun EntidadExternaProponente() {
@@ -285,7 +365,7 @@ fun EntidadExternaProponente() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Entidad Externa Proponente",
+            text = "Entidad Externa Proponiente",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
@@ -304,13 +384,11 @@ fun EntidadExternaProponente() {
     DesplegableEntidadFinanciera()
 }
 
+
+
 @Composable
-fun DesplegableEntidadFinanciera() {
+fun DesplegableEntidadFinanciera(viewModel: DesplegableEntidadFinancieraViewModel = viewModel()) {
     var expanded by remember { mutableStateOf(false) }
-    var textInput by remember { mutableStateOf("") }
-    var tea by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
-    var comment by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -330,12 +408,12 @@ fun DesplegableEntidadFinanciera() {
             )
 
             OutlinedTextField(
-                value = textInput,
-                onValueChange = { textInput = it },
-                label = { Text(" Ingresa el nombre de la entidad") },
+                value = viewModel.nombreEntidad.value,
+                onValueChange = { viewModel.onNombreEntidadChanged(it) },
+                label = { Text("Ingresa el nombre de la entidad") },
                 trailingIcon = {
                     Icon(
-                        imageVector = if (expanded) Icons.Default.ArrowDropDown else Icons.Default.ArrowDropDown,
+                        imageVector = Icons.Default.ArrowDropDown,
                         contentDescription = null,
                         modifier = Modifier.clickable { expanded = !expanded },
                         tint = Color.Black
@@ -359,8 +437,9 @@ fun DesplegableEntidadFinanciera() {
                         color = Color.Black
                     )
                     OutlinedTextField(
-                        value = tea,
-                        onValueChange = { tea = it },
+                        value = viewModel.tea.value,
+                        onValueChange = { viewModel.onTeaChanged(it) },
+                        label = { Text("Ingresa el TEA") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp)
                     )
@@ -372,8 +451,9 @@ fun DesplegableEntidadFinanciera() {
                         color = Color.Black
                     )
                     OutlinedTextField(
-                        value = amount,
-                        onValueChange = { amount = it },
+                        value = viewModel.amount.value,
+                        onValueChange = { viewModel.onAmountChanged(it) },
+                        label = { Text("Ingresa el importe") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp)
                     )
@@ -385,14 +465,49 @@ fun DesplegableEntidadFinanciera() {
                         color = Color.Black
                     )
                     OutlinedTextField(
-                        value = comment,
-                        onValueChange = { comment = it },
+                        value = viewModel.comment.value,
+                        onValueChange = { viewModel.onCommentChanged(it) },
+                        label = { Text("Ingresa un comentario") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp)
                     )
                 }
             }
         }
+
+
+
     }
 }
+
+@Composable
+fun GuardarSolicitudButton(
+    isEnabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(
+                color = if (isEnabled) MaterialTheme.colorScheme.primary else Color.Gray,
+                shape = MaterialTheme.shapes.medium
+            )
+            .clickable(enabled = isEnabled) {
+                onClick()
+                println("Botón clickeado")
+            }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Guardar Solicitud",
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+
+
+
 
